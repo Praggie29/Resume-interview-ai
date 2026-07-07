@@ -1,61 +1,111 @@
 const { GoogleGenAI } = require("@google/genai")
-const { z } = require("zod")
-const { zodToJsonSchema } = require("zod-to-json-schema")
 const puppeteer = require("puppeteer")
 
 const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GENAI_API_KEY
 })
 
-
-const interviewReportSchema = z.object({
-    matchScore: z.number().describe("A score between 0 and 100 indicating how well the candidate's profile matches the job describe"),
-    technicalQuestions: z.array(z.object({
-        question: z.string().describe("The technical question can be asked in the interview"),
-        intention: z.string().describe("The intention of interviewer behind asking this question"),
-        answer: z.string().describe("How to answer this question, what points to cover, what approach to take etc.")
-    })).describe("Technical questions that can be asked in the interview along with their intention and how to answer them"),
-    behavioralQuestions: z.array(z.object({
-        question: z.string().describe("The technical question can be asked in the interview"),
-        intention: z.string().describe("The intention of interviewer behind asking this question"),
-        answer: z.string().describe("How to answer this question, what points to cover, what approach to take etc.")
-    })).describe("Behavioral questions that can be asked in the interview along with their intention and how to answer them"),
-    skillGaps: z.array(z.object({
-        skill: z.string().describe("The skill which the candidate is lacking"),
-        severity: z.enum([ "low", "medium", "high" ]).describe("The severity of this skill gap, i.e. how important is this skill for the job and how much it can impact the candidate's chances")
-    })).describe("List of skill gaps in the candidate's profile along with their severity"),
-    preparationPlan: z.array(z.object({
-        day: z.number().describe("The day number in the preparation plan, starting from 1"),
-        focus: z.string().describe("The main focus of this day in the preparation plan, e.g. data structures, system design, mock interviews etc."),
-        tasks: z.array(z.string()).describe("List of tasks to be done on this day to follow the preparation plan, e.g. read a specific book or article, solve a set of problems, watch a video etc.")
-    })).describe("A day-wise preparation plan for the candidate to follow in order to prepare for the interview effectively"),
-    title: z.string().describe("The title of the job for which the interview report is generated"),
-})
+// Plain JSON Schema that Gemini strictly follows
+const interviewReportJsonSchema = {
+    type: "object",
+    properties: {
+        title: {
+            type: "string",
+            description: "The job title extracted from the job description, e.g. 'Senior Software Engineer at Google'"
+        },
+        matchScore: {
+            type: "number",
+            description: "A score between 0 and 100 indicating how well the candidate matches the job"
+        },
+        technicalQuestions: {
+            type: "array",
+            description: "5-8 technical interview questions with intention and model answer",
+            items: {
+                type: "object",
+                properties: {
+                    question: { type: "string" },
+                    intention: { type: "string" },
+                    answer: { type: "string" }
+                },
+                required: ["question", "intention", "answer"]
+            }
+        },
+        behavioralQuestions: {
+            type: "array",
+            description: "4-6 behavioral interview questions with intention and model answer",
+            items: {
+                type: "object",
+                properties: {
+                    question: { type: "string" },
+                    intention: { type: "string" },
+                    answer: { type: "string" }
+                },
+                required: ["question", "intention", "answer"]
+            }
+        },
+        skillGaps: {
+            type: "array",
+            description: "Skills the candidate is missing for this role",
+            items: {
+                type: "object",
+                properties: {
+                    skill: { type: "string" },
+                    severity: { type: "string", enum: ["low", "medium", "high"] }
+                },
+                required: ["skill", "severity"]
+            }
+        },
+        preparationPlan: {
+            type: "array",
+            description: "A 7-day preparation plan for the interview",
+            items: {
+                type: "object",
+                properties: {
+                    day: { type: "number" },
+                    focus: { type: "string" },
+                    tasks: { type: "array", items: { type: "string" } }
+                },
+                required: ["day", "focus", "tasks"]
+            }
+        }
+    },
+    required: ["title", "matchScore", "technicalQuestions", "behavioralQuestions", "skillGaps", "preparationPlan"]
+}
 
 async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
 
+    const prompt = `You are an expert technical interviewer and career coach.
+Generate a structured interview preparation report for a candidate applying for a job.
 
-    const prompt = `Generate an interview report for a candidate with the following details:
-                        Resume: ${resume}
-                        Self Description: ${selfDescription}
-                        Job Description: ${jobDescription}
-`
+Job Description:
+${jobDescription}
+
+Candidate Resume:
+${resume || "(No resume provided)"}
+
+Candidate Self Description:
+${selfDescription || "(No self description provided)"}
+
+Return ONLY a valid JSON object. Do NOT include any extra text, markdown, or explanation.
+The JSON must contain exactly these fields:
+- title: the job title from the job description
+- matchScore: a number 0-100
+- technicalQuestions: array of objects with question, intention, answer
+- behavioralQuestions: array of objects with question, intention, answer
+- skillGaps: array of objects with skill and severity (low/medium/high)
+- preparationPlan: array of objects with day (number), focus, tasks (array of strings)`
 
     const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: {
             responseMimeType: "application/json",
-            responseSchema: zodToJsonSchema(interviewReportSchema),
+            responseSchema: interviewReportJsonSchema,
         }
     })
 
     return JSON.parse(response.text)
-
-
 }
-
-
 
 async function generatePdfFromHtml(htmlContent) {
     const browser = await puppeteer.launch()
@@ -96,7 +146,7 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                     `
 
     const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: {
             responseMimeType: "application/json",

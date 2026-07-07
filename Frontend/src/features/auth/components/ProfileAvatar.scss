@@ -1,0 +1,125 @@
+.profile-avatar {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+
+    &:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    &:active {
+        transform: scale(0.95);
+    }
+}
+
+.avatar-letter {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.avatar-dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    min-width: 220px;
+    z-index: 1000;
+    animation: dropdownFadeIn 0.2s ease;
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: -6px;
+        right: 14px;
+        width: 12px;
+        height: 12px;
+        background: #fff;
+        transform: rotate(45deg);
+        border-radius: 2px;
+    }
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-header {
+    padding: 16px 18px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dropdown-username {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1f27;
+}
+
+.dropdown-email {
+    font-size: 13px;
+    color: #666;
+    word-break: break-all;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: #eee;
+    margin: 0 12px;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 18px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: background 0.15s ease;
+
+    &:hover {
+        background: #f5f5f5;
+    }
+}
+
+.dropdown-logout {
+    color: #e74c3c;
+
+    svg {
+        flex-shrink: 0;
+    }
+
+    &:hover {
+        background: #fef2f2;
+    }
+}

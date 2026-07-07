@@ -1,4 +1,5 @@
 const jwt=require("jsonwebtoken");
+const tokenBlacklistModel=require("../models/blacklist.model");
 
 
 async function authUser(req,res,next){
