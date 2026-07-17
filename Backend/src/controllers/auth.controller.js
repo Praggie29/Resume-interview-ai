@@ -3,6 +3,17 @@ const bcrypt=require("bcryptjs");
 const jwt=require("jsonwebtoken");
 const tokenBlacklistModel=require("../models/blacklist.model")
 
+const isProduction = process.env.NODE_ENV === "production";
+
+function getCookieOptions() {
+    return {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        maxAge: 24 * 60 * 60 * 1000 // 1 day
+    };
+}
+
 async function registerUserController(req,res){
     const {username,email,password}=req.body;
     if(!username || !email || !password){
@@ -29,11 +40,7 @@ async function registerUserController(req,res){
         process.env.JWT_SECRET,
         {expiresIn:"1d"}
      )
-     res.cookie("token",token, {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax"
-     })
+     res.cookie("token", token, getCookieOptions())
     res.status(201).json({
         message:"User registered successfully",
         user:{
@@ -64,11 +71,7 @@ async function loginUserController(req,res){
         process.env.JWT_SECRET,
         {expiresIn:"1d"}
      )
-     res.cookie("token",token, {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax"
-     });
+     res.cookie("token", token, getCookieOptions());
      res.status(200).json({
         message:"User loggedIn successfully",
         user:{
@@ -84,7 +87,7 @@ async function logoutUserController(req,res){
   if(token){
     await tokenBlacklistModel.create({token})
   }
-  res.clearCookie("token");
+  res.clearCookie("token", getCookieOptions());
   res.status(200).json({
     message:"User logged out successfully"
   })
