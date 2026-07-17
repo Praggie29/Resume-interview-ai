@@ -191,22 +191,7 @@ GOOGLE_GENAI_API_KEY=your_gemini_api_key
 
 ### 3. Run the Application
 
-```bash
-# Terminal 1: Start the backend
-cd Backend
-npm run dev
-
-# Terminal 2: Start the frontend
-cd Frontend
-npm run dev
-```
-
-- Backend runs on **http://localhost:3000**
-- Frontend runs on **http://localhost:5173**
-
-### 4. Use the App
-
-1. Navigate to `http://localhost:5173`
+1. Navigate to (http://resume-interview-ai-qeyb-git-main-prag1.vercel.app) ( Live Link )
 2. **Register** a new account
 3. Paste a **job description**, upload a **resume PDF** (or write a self-description)
 4. Click **"Generate My Interview Strategy"**
