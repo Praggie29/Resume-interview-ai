@@ -2,7 +2,7 @@
 
 An AI-powered interview preparation platform that generates personalized interview reports, technical & behavioral questions, skill gap analysis, and tailored preparation roadmaps based on a candidate's resume and a target job description.
 
-🌐 **Live Demo**: [http://resume-interview-ai-qeyb-git-main-prag1.vercel.app)
+🌐 **Live Demo**: http://resume-interview-ai-qeyb-git-main-prag1.vercel.app
 
 ---
 
