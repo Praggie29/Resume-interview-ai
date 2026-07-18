@@ -2,6 +2,8 @@
 
 An AI-powered interview preparation platform that generates personalized interview reports, technical & behavioral questions, skill gap analysis, and tailored preparation roadmaps based on a candidate's resume and a target job description.
 
+🌐 **Live Demo**: [http://resume-interview-ai-qeyb-git-main-prag1.vercel.app)
+
 ---
 
 ## 🚀 Features
@@ -191,7 +193,7 @@ GOOGLE_GENAI_API_KEY=your_gemini_api_key
 
 ### 3. Run the Application
 
-1. Navigate to (http://resume-interview-ai-qeyb-git-main-prag1.vercel.app) ( Live Link )
+1. Navigate to live link
 2. **Register** a new account
 3. Paste a **job description**, upload a **resume PDF** (or write a self-description)
 4. Click **"Generate My Interview Strategy"**
