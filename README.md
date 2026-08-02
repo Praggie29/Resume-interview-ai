@@ -17,6 +17,7 @@ An AI-powered interview preparation platform that generates personalized intervi
 - **Resume PDF Download:** AI rewrites your resume tailored to the job description and generates a polished PDF for download.
 - **Recent Reports Dashboard:** View and revisit all your past interview reports.
 - **Protected Routes:** Unauthenticated users are redirected to the login page.
+- **In-Memory Caching:** Frequently accessed data (AI reports, generated PDFs, and report queries) is cached to speed up responses and reduce AI API costs.
 
 ---
 
@@ -36,6 +37,7 @@ An AI-powered interview preparation platform that generates personalized intervi
 | Puppeteer       | PDF generation from HTML           |
 | pdf-parse       | Extract text from uploaded PDFs    |
 | Zod             | Schema validation for AI responses |
+| node-cache      | In-memory caching for performance  |
 
 ### Frontend
 
@@ -73,6 +75,7 @@ An AI-powered interview preparation platform that generates personalized intervi
 │   │   │   └── interview.routes.js  # Interview API routes
 │   │   └── services/
 │   │       ├── ai.service.js        # Gemini AI integration + Puppeteer PDF
+│   │       ├── cache.service.js     # In-memory caching wrapper (node-cache)
 │   │       └── temp.js              # (placeholder)
 │   ├── .env                         # Environment variables (JWT_SECRET, GOOGLE_GENAI_API_KEY, MONGO_URI)
 │   └── package.json
@@ -153,6 +156,36 @@ An AI-powered interview preparation platform that generates personalized intervi
    - `preparationPlan` — a 7-day roadmap with focus areas and tasks
 5. The response is validated against the schema and saved to MongoDB.
 6. Users can also request an **AI-rewritten resume PDF** tailored to the job description, generated via Puppeteer.
+
+---
+
+## ⚡ Caching
+
+The backend uses **`node-cache`** — a lightweight in-memory cache — to improve performance and reduce costs. No external Redis/DB setup is required.
+
+### What gets cached
+
+| Data | Cache Key | TTL | Notes |
+|------|-----------|-----|-------|
+| AI interview report | `interviewReport:<input content>` | 1 hour | Identical inputs skip the Gemini API call entirely |
+| AI-generated resume PDF | `resumePdf:<input content>` | 1 hour | Avoids re-running Gemini + Puppeteer |
+| Single report by ID | `interviewReport:<userId>:<reportId>` | 10 min | Reports are immutable, so caching is safe |
+| User's report list | `interviewReports:list:<userId>` | 5 min | Invalidated automatically when a new report is created |
+
+### How it works
+
+- The `cache.service.js` wrapper exposes `get`, `set`, `del`, `has`, and `getOrSet` helpers.
+- `getOrSet(key, fallbackFn, ttl)` returns the cached value if present, otherwise computes it via `fallbackFn` and stores it.
+- Cache keys are **deterministic** — built from the exact input content — so only identical requests hit the cache.
+- When a new interview report is generated, the user's cached report list is **invalidated** so fresh data appears immediately.
+
+### Benefits
+
+- ⚡ **Faster responses** — repeated identical requests return instantly from memory.
+- 💰 **Lower AI API costs** — Gemini calls are made only once per unique input within the TTL window.
+- 🗄️ **Reduced database load** — frequently-read report queries hit memory instead of MongoDB.
+
+> **Note:** This is in-memory caching, so the cache is per-server-instance and resets on restart. For horizontal scaling across multiple instances, swap the underlying implementation in `cache.service.js` for a shared cache like **Redis** (`ioredis`) — the rest of the codebase stays unchanged.
 
 ---
 
