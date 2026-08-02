@@ -1,6 +1,7 @@
 const pdfParse = require("pdf-parse")
 const { generateInterviewReport, generateResumePdf } = require("../services/ai.service")
 const interviewReportModel = require("../models/interviewReport.model")
+const cacheService = require("../services/cache.service")
 
 /**
  * @description Controller to generate interview report based on user self description, resume and job description.
@@ -38,6 +39,9 @@ async function generateInterViewReportController(req, res) {
             ...interViewReportByAi
         })
 
+        // Invalidate cached "all reports" list for this user since a new report was created
+        cacheService.del(`interviewReports:list:${req.user.id}`)
+
         res.status(201).json({
             message: "Interview report generated successfully.",
             interviewReport
@@ -58,6 +62,18 @@ async function getInterviewReportByIdController(req, res) {
 
     const { interviewId } = req.params
 
+    // Reports are immutable once created, so cache them keyed by user + report id.
+    // TTL is 10 minutes (600s).
+    const cacheKey = `interviewReport:${req.user.id}:${interviewId}`
+
+    const cachedReport = cacheService.get(cacheKey)
+    if (cachedReport) {
+        return res.status(200).json({
+            message: "Interview report fetched successfully (cached).",
+            interviewReport: cachedReport
+        })
+    }
+
     const interviewReport = await interviewReportModel.findOne({ _id: interviewId, user: req.user.id })
 
     if (!interviewReport) {
@@ -65,6 +81,8 @@ async function getInterviewReportByIdController(req, res) {
             message: "Interview report not found."
         })
     }
+
+    cacheService.set(cacheKey, interviewReport.toObject ? interviewReport.toObject() : interviewReport, 600)
 
     res.status(200).json({
         message: "Interview report fetched successfully.",
@@ -77,7 +95,21 @@ async function getInterviewReportByIdController(req, res) {
  * @description Controller to get all interview reports of logged in user.
  */
 async function getAllInterviewReportsController(req, res) {
+    // Cache the user's report list. TTL is 5 minutes (300s).
+    // Invalidated when a new report is generated.
+    const cacheKey = `interviewReports:list:${req.user.id}`
+
+    const cachedReports = cacheService.get(cacheKey)
+    if (cachedReports) {
+        return res.status(200).json({
+            message: "Interview reports fetched successfully (cached).",
+            interviewReports: cachedReports
+        })
+    }
+
     const interviewReports = await interviewReportModel.find({ user: req.user.id }).sort({ createdAt: -1 }).select("-resume -selfDescription -jobDescription -__v -technicalQuestions -behavioralQuestions -skillGaps -preparationPlan")
+
+    cacheService.set(cacheKey, interviewReports, 300)
 
     res.status(200).json({
         message: "Interview reports fetched successfully.",
