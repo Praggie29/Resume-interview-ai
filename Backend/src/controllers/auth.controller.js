@@ -93,16 +93,27 @@ async function logoutUserController(req,res){
   })
 }
 
-async function getMeController(req,res){
-    const user=await userModel.findById(req.user.id)
+async function getMeController(req, res) {
+    const cacheKey = `user:${req.user.id}`;
+
+    const user = await cacheService.getOrSet(
+        cacheKey,
+        async () => {
+            return await userModel
+                .findById(req.user.id)
+                .select("name email");
+        },
+        1800 // 30 minutes
+    );
+
     res.status(200).json({
-        message:"User details fetched successfully",
-        user:{
-            id:user._id,
-            username:user.name,
-            email:user.email
+        message: "User details fetched successfully",
+        user: {
+            id: req.user.id,
+            username: user.name,
+            email: user.email
         }
-    })
+    });
 }
 
 module.exports={
