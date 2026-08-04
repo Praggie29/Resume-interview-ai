@@ -2,7 +2,9 @@ const NodeCache = require("node-cache");
 
 const cache = new NodeCache({
     stdTTL: 300,      // Default TTL: 5 minutes
-    checkperiod: 60   // Remove expired keys every 60 seconds
+    checkperiod: 60,  // Remove expired keys every 60 seconds
+    maxKeys: 500,     // Prevents RAM memory overflow by capping max items
+    useClones: false  // Improves performance by disabling deep object cloning
 });
 
 const cacheService = {

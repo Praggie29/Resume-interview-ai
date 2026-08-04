@@ -3,6 +3,7 @@ const puppeteer = require("puppeteer")
 const { z } = require("zod")
 const { zodToJsonSchema } = require("zod-to-json-schema")
 const cacheService = require("./cache.service")
+const crypto = require("crypto");
 
 const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GENAI_API_KEY
@@ -79,7 +80,12 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
 
     // Generate a deterministic cache key based on the input content.
     // Only identical inputs will hit the cache. TTL is 1 hour (3600s).
-    const cacheKey = `interviewReport:${JSON.stringify({ resume, selfDescription, jobDescription })}`
+    const reportHash = crypto
+    .createHash("sha256")
+    .update(resume + selfDescription + jobDescription)
+    .digest("hex");
+
+const cacheKey = `interviewReport:${reportHash}`;
 
     return cacheService.getOrSet(cacheKey, async () => {
         const prompt = `You are an expert technical interviewer and career coach.
@@ -148,7 +154,12 @@ async function generatePdfFromHtml(htmlContent) {
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
 
     // Cache generated PDF for 1 hour. Identical input content produces the same PDF.
-    const cacheKey = `resumePdf:${JSON.stringify({ resume, selfDescription, jobDescription })}`
+   const pdfHash = crypto
+    .createHash("sha256")
+    .update(resume + selfDescription + jobDescription)
+    .digest("hex");
+
+const cacheKey = `resumePdf:${pdfHash}`;
 
     return cacheService.getOrSet(cacheKey, async () => {
         const resumePdfSchema = z.object({

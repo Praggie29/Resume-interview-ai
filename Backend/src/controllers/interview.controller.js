@@ -18,25 +18,11 @@ async function generateInterViewReportController(req, res) {
 
         const { selfDescription, jobDescription } = req.body;
 
-        // Generate a unique cache key based on the resume and inputs
-        const reportHash = crypto
-            .createHash("sha256")
-            .update(resumeText + selfDescription + jobDescription)
-            .digest("hex");
-
-        const cacheKey = `interviewReport:${reportHash}`;
-
-        const interviewReportByAi = await cacheService.getOrSet(
-            cacheKey,
-            async () => {
-                return await generateInterviewReport({
-                    resume: resumeText,
-                    selfDescription,
-                    jobDescription
-                });
-            },
-            86400 // 24 hours
-        );
+        const interviewReportByAi = await generateInterviewReport({
+            resume: resumeText,
+            selfDescription,
+            jobDescription
+        });
 
         if (!interviewReportByAi.title) {
             interviewReportByAi.title = jobDescription
@@ -52,7 +38,7 @@ async function generateInterViewReportController(req, res) {
             ...interviewReportByAi
         });
 
-        cacheService.del(`interviewReports:list:${req.user.id}`);
+        cacheService.del(`interviewReports:${req.user.id}`);
 
         res.status(201).json({
             message: "Interview report generated successfully.",
