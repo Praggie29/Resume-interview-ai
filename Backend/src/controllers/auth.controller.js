@@ -2,6 +2,8 @@ const userModel=require("../models/users.model");
 const bcrypt=require("bcryptjs");
 const jwt=require("jsonwebtoken");
 const tokenBlacklistModel=require("../models/blacklist.model")
+const cacheService = require("../services/cache.service");
+const bloomFilterService = require("../services/bloomFilter.service");
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -21,20 +23,34 @@ async function registerUserController(req,res){
             message:"Please provide username,email and password"
         })
     }
-    const isUserAlreadyExists=await userModel.findOne({
-        $or:[{name:username},{email}]
-    })
-    if(isUserAlreadyExists){
-        return res.status(400).json({
-            message:'Account already exists with this email address or username'
-        })
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanUsername = username.trim();
+
+    // Check bloom filter first (0ms fast path for new users)
+    const mightExist = bloomFilterService.has(cleanEmail) || bloomFilterService.has(cleanUsername);
+
+    if (mightExist) {
+        const isUserAlreadyExists = await userModel.findOne({
+            $or: [{ name: cleanUsername }, { email: cleanEmail }]
+        });
+        if (isUserAlreadyExists) {
+            return res.status(400).json({
+                message: 'Account already exists with this email address or username'
+            });
+        }
     }
+
     const hash=await bcrypt.hash(password,10);
     const user=await userModel.create({
-        name:username,
-        email,
+        name:cleanUsername,
+        email:cleanEmail,
         password:hash
-    })
+    });
+
+    bloomFilterService.add(user.email);
+    bloomFilterService.add(user.name);
+
      const token=jwt.sign(
         {id:user._id,username:user.name},
         process.env.JWT_SECRET,
