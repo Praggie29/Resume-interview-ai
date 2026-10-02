@@ -9,6 +9,7 @@ async function connectDB(){
     }
     catch(err){
         console.log(err);
+        process.exit(1);
     }
 }
         

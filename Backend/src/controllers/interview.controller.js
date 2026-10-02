@@ -128,11 +128,18 @@ async function generateResumePdfController(req, res) {
 
     const { resume, jobDescription, selfDescription } = interviewReport;
 
-    const pdfBuffer = await generateResumePdf({
-        resume,
-        jobDescription,
-        selfDescription
-    });
+    const cacheKey = `pdf:${interviewReportId}`;
+    const pdfBuffer = await cacheService.getOrSet(
+        cacheKey,
+        async () => {
+            return await generateResumePdf({
+                resume,
+                jobDescription,
+                selfDescription
+            });
+        },
+        3600 // Cache for 1 hour (3600 seconds)
+    );
 
     res.set({
         "Content-Type": "application/pdf",

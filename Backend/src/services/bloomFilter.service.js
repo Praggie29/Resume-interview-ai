@@ -30,8 +30,6 @@ function hash3(email) {
 
 // 3. Add email
 function addEmail(email) {
-  if (!email) return;
-
   const cleanEmail = email.trim().toLowerCase();
 
   const slot1 = hash1(cleanEmail);
@@ -43,24 +41,8 @@ function addEmail(email) {
   hashVector[slot3] = 1;
 }
 
-function add(email) {
-  addEmail(email);
-}
-
-async function initFromDB() {
-  const users = await userModel.find({}, "email").lean();
-
-  for (const user of users) {
-    if (user && user.email) {
-      addEmail(user.email);
-    }
-  }
-}
-
 // 4. Check email
 function checkEmail(email) {
-  if (!email) return false;
-
   const cleanEmail = email.trim().toLowerCase();
 
   const slot1 = hash1(cleanEmail);
@@ -74,5 +56,20 @@ function checkEmail(email) {
   return true; // Might exist
 }
 
-// Fixed export
-module.exports = { addEmail, add, initFromDB, checkEmail };
+// 5. Initialize from Database on server startup
+async function initFromDB() {
+  try {
+    const users = await userModel.find({}, "email").lean();
+    for (const user of users) {
+      if (user && user.email) {
+        addEmail(user.email);
+      }
+    }
+    console.log(`[BloomFilter] Initialized with ${users.length} existing users`);
+  } catch (error) {
+    console.error("[BloomFilter] Failed to load users from DB:", error.message);
+  }
+}
+
+// Exports
+module.exports = { addEmail, add: addEmail, checkEmail, initFromDB };

@@ -46,7 +46,7 @@ async function registerUserController(req,res){
         password:hash
     });
 
-    bloomFilterService.add(user.email);
+    bloomFilterService.addEmail(user.email);
 
      const token=jwt.sign(
         {id:user._id,username:user.name},
@@ -66,7 +66,20 @@ async function registerUserController(req,res){
 
 async function loginUserController(req,res){
     const {email,password}=req.body;
-    const user=await userModel.findOne({email})
+    if(!email || !password){
+        return res.status(400).json({
+            message:"Please provide email and password"
+        })
+    }
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!bloomFilterService.checkEmail(cleanEmail)) {
+        return res.status(400).json({
+            message: "No account found with this email. Please register first."
+        });
+    }
+
+    const user=await userModel.findOne({email: cleanEmail})
     if(!user){
         return res.status(400).json({
             message:"No account found with this email. Please register first."
@@ -95,15 +108,22 @@ async function loginUserController(req,res){
      })
 }
 
-async function logoutUserController(req,res){
-  const token=req.cookies.token;
-  if(token){
-    await tokenBlacklistModel.create({token})
+async function logoutUserController(req, res) {
+  const token = req.cookies.token;
+  if (token) {
+    await tokenBlacklistModel.create({ token });
+
+    cacheService.set(`blacklist:${token}`, true, 86400);
+
+    if (req.user?.id) {
+      cacheService.del(`user:${req.user.id}`);
+    }
   }
+
   res.clearCookie("token", getCookieOptions());
   res.status(200).json({
-    message:"User logged out successfully"
-  })
+    message: "User logged out successfully"
+  });
 }
 
 async function getMeController(req, res) {
