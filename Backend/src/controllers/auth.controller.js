@@ -27,10 +27,8 @@ async function registerUserController(req,res){
     const cleanEmail = email.trim().toLowerCase();
     const cleanUsername = username.trim();
 
-    // Check bloom filter first (0ms fast path for new users)
-    const mightExist = bloomFilterService.has(cleanEmail) || bloomFilterService.has(cleanUsername);
-
-    if (mightExist) {
+     if (bloomFilterService.checkEmail(cleanEmail)) {
+        // Filter says "might exist" -> Check DB to confirm
         const isUserAlreadyExists = await userModel.findOne({
             $or: [{ name: cleanUsername }, { email: cleanEmail }]
         });
@@ -49,7 +47,6 @@ async function registerUserController(req,res){
     });
 
     bloomFilterService.add(user.email);
-    bloomFilterService.add(user.name);
 
      const token=jwt.sign(
         {id:user._id,username:user.name},
