@@ -1,3 +1,5 @@
+const userModel = require("../models/users.model");
+
 // 1. Vector of 50,000 slots (all initialized to 0)
 const hashVector = new Uint8Array(50000);
 
@@ -28,6 +30,8 @@ function hash3(email) {
 
 // 3. Add email
 function addEmail(email) {
+  if (!email) return;
+
   const cleanEmail = email.trim().toLowerCase();
 
   const slot1 = hash1(cleanEmail);
@@ -39,8 +43,24 @@ function addEmail(email) {
   hashVector[slot3] = 1;
 }
 
+function add(email) {
+  addEmail(email);
+}
+
+async function initFromDB() {
+  const users = await userModel.find({}, "email").lean();
+
+  for (const user of users) {
+    if (user && user.email) {
+      addEmail(user.email);
+    }
+  }
+}
+
 // 4. Check email
 function checkEmail(email) {
+  if (!email) return false;
+
   const cleanEmail = email.trim().toLowerCase();
 
   const slot1 = hash1(cleanEmail);
@@ -55,4 +75,4 @@ function checkEmail(email) {
 }
 
 // Fixed export
-module.exports = { addEmail, checkEmail };
+module.exports = { addEmail, add, initFromDB, checkEmail };
