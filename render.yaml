@@ -1,0 +1,22 @@
+# Render Blueprint – keeps deployment config in version control
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: resume-interview-ai-api
+    runtime: node
+    region: oregon
+    rootDir: Backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false          # set manually in Render dashboard (secret)
+      - key: JWT_SECRET
+        sync: false          # set manually in Render dashboard (secret)
+      - key: GOOGLE_GENAI_API_KEY
+        sync: false          # set manually in Render dashboard (secret)
+      - key: CLIENT_URL
+        sync: false          # your Vercel frontend URL
