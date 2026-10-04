@@ -29,11 +29,11 @@ async function registerUserController(req,res){
 
      if (bloomFilterService.checkEmail(cleanEmail)) {
         // Filter says "might exist" -> Check DB to confirm
-        const isUserAlreadyExists = await userModel.findOne({
-            $or: [{ name: cleanUsername }, { email: cleanEmail }]
-        });
+          const isUserAlreadyExists = await userModel.findOne({
+          $or: [{ name: cleanUsername }, { email: cleanEmail }]
+       });
         if (isUserAlreadyExists) {
-            return res.status(400).json({
+           return res.status(400).json({
                 message: 'Account already exists with this email address or username'
             });
         }
@@ -46,7 +46,7 @@ async function registerUserController(req,res){
         password:hash
     });
 
-    bloomFilterService.addEmail(user.email);
+     bloomFilterService.addEmail(user.email);
 
      const token=jwt.sign(
         {id:user._id,username:user.name},
@@ -74,12 +74,11 @@ async function loginUserController(req,res){
     const cleanEmail = email.trim().toLowerCase();
 
     if (!bloomFilterService.checkEmail(cleanEmail)) {
-        return res.status(400).json({
-            message: "No account found with this email. Please register first."
+           return res.status(400).json({
+           message: "No account found with this email. Please register first."
         });
     }
-
-    const user=await userModel.findOne({email: cleanEmail})
+    const user=await userModel.findOne({email: cleanEmail}).lean();
     if(!user){
         return res.status(400).json({
             message:"No account found with this email. Please register first."
@@ -128,12 +127,11 @@ async function logoutUserController(req, res) {
 
 async function getMeController(req, res) {
     const cacheKey = `user:${req.user.id}`;
-
     const user = await cacheService.getOrSet(
-        cacheKey,
-        async () => {
-            return await userModel
-                .findById(req.user.id)
+       cacheKey,
+       async () => {
+           return await userModel
+               .findById(req.user.id)
                 .select("name email");
         },
         1800 // 30 minutes

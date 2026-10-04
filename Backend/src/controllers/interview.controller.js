@@ -111,6 +111,7 @@ async function getAllInterviewReportsController(req, res) {
     });
 }
 
+
 /**
  * Generate Resume PDF
  */
